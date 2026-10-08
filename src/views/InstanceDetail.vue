@@ -10,7 +10,7 @@ import { Empty } from '@/components/ui/empty'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import * as financeHelper from '@/utils/financeHelper'
-import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatUptimeWithFormat } from '@/utils/helper'
+import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatRelativeTime, formatUptimeWithFormat } from '@/utils/helper'
 import { applyOfflineLast, applyPinnedFirst } from '@/utils/nodeSortHelper'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
 import { getRegionCode, getRegionDisplayName } from '@/utils/regionHelper'
@@ -225,7 +225,7 @@ const systemInfo = computed<InfoItem[]>(() => [
   { label: '操作系统', value: data.value?.os ?? '-', icon: 'icon-park-outline:computer' },
   { label: '内核版本', value: data.value?.kernel_version ?? '-', icon: 'icon-park-outline:code' },
   { label: '运行时间', value: formatUptime(data.value?.uptime ?? 0), icon: 'icon-park-outline:timer' },
-  { label: '最后上报', value: formatDateTime(data.value?.time), icon: 'icon-park-outline:time' },
+  { label: data.value?.online ? '最后上报' : '最后在线', value: `${formatDateTime(data.value?.time)} · ${formatRelativeTime(data.value?.time, nodesStore.now)}`, icon: 'icon-park-outline:time' },
 ])
 
 const storageInfo = computed<InfoItem[]>(() => [
@@ -462,7 +462,7 @@ const trafficProgressStyle = computed(() => ({
       </div>
 
       <LoadChart :key="data.uuid" :uuid="data.uuid" class="px-4" />
-      <PingChart :key="data.uuid" :uuid="data.uuid" class="px-4" />
+      <PingChart :key="data.uuid" :uuid="data.uuid" :online="data.online" :last-seen="data.time" class="px-4" />
     </template>
   </div>
 </template>

@@ -15,7 +15,7 @@ const rows = computed(() => ping.regions.map(region => ({
 })))
 const selected = computed(() => rows.value.find(row => row.region === ping.selectedRegion)?.carriers ?? CARRIERS.map(carrier => ({ ...carrier, latency: null, loss: null, samples: 0, targets: 0, trend: [] })))
 
-const graphReady = computed(() => props.online && ping.enabled && !ping.historyError && !ping.error && ping.historyEnd > 0)
+const graphReady = computed(() => ping.enabled && !ping.historyError && !ping.error && ping.historyEnd > 0)
 const ceiling = computed(() => Math.max(50, Math.ceil(Math.max(0, ...selected.value.flatMap(c => c.trend.map(p => p.latency ?? 0))) / 50) * 50))
 const allCeiling = computed(() => Math.max(50, Math.ceil(Math.max(0, ...rows.value.flatMap(r => r.carriers.flatMap(c => c.trend.map(p => p.latency ?? 0)))) / 50) * 50))
 const carrierColors = { telecom: 'text-teal-600 dark:text-teal-400', unicom: 'text-indigo-500 dark:text-indigo-400', mobile: 'text-sky-600 dark:text-sky-400' }
@@ -97,8 +97,9 @@ function tone(reading: CarrierReading) {
           </PopoverClose>
         </div>
         <p v-if="!online" class="mb-2 text-xs text-muted-foreground">
-          节点已离线，暂无当前延迟。
+          节点已离线；下方保留近期趋势，点击“查看历史延迟”可查看离线前的记录。
         </p>
+        <a v-if="!online" :href="`/instance/${uuid}#ping-history`" class="mb-2 inline-block text-xs text-primary underline" @click.stop>查看历史延迟</a>
         <table class="w-full table-fixed text-center text-xs">
           <thead>
             <tr class="text-muted-foreground">
@@ -133,7 +134,7 @@ function tone(reading: CarrierReading) {
           </tbody>
         </table>
         <p class="mt-2 text-[10px] leading-relaxed text-muted-foreground">
-          延迟均值和丢包率统计近 5 分钟，曲线展示近 30 分钟，每分钟刷新。延迟仅计成功探测；丢包率仅计已收到的探测结果。三网共用刻度，红条表示丢包，未收到样本的时段留空，0% 丢包也可能有缺测。
+          延迟均值和丢包率统计近 5 分钟，曲线展示近 30 分钟，每分钟刷新。延迟仅计成功探测；丢包率仅计已收到的探测结果。三网共用刻度，红条表示丢包，短暂缺测连接前后实测点，不补造测量值；丢包和长时间缺测留空。
         </p>
       </PopoverContent>
     </PopoverPortal>

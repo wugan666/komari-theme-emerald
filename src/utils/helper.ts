@@ -291,7 +291,7 @@ export function formatDateTime(timestamp: string | Date | undefined, format = 'Y
 /**
  * 格式化为相对时间，如 "3 小时前"
  */
-export function formatRelativeTime(timestamp: string | Date | undefined): string {
+export function formatRelativeTime(timestamp: string | Date | undefined, now: Date = new Date()): string {
   if (!timestamp)
     return '-'
 
@@ -299,7 +299,7 @@ export function formatRelativeTime(timestamp: string | Date | undefined): string
   if (!date.isValid())
     return '-'
 
-  const minutes = dayjs().diff(date, 'minute')
+  const minutes = dayjs(now).diff(date, 'minute')
   if (minutes < 1)
     return '刚刚'
   if (minutes < 60)
@@ -308,10 +308,5 @@ export function formatRelativeTime(timestamp: string | Date | undefined): string
   if (hours < 24)
     return `${hours} 小时前`
   const days = Math.floor(hours / 24)
-  if (days < 30)
-    return `${days} 天前`
-  const months = Math.floor(days / 30)
-  if (months < 12)
-    return `${months} 个月前`
-  return `${Math.floor(months / 12)} 年前`
+  return `${days} 天前`
 }

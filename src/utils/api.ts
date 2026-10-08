@@ -33,6 +33,8 @@ export interface PublicSettings {
   oauth_enable: boolean
   oauth_provider: string | null
   ping_record_preserve_time: number
+  ping_record_permanent?: boolean
+  ping_record_enabled?: boolean
   private_site: boolean
   record_enabled: boolean
   record_preserve_time: number
@@ -77,6 +79,7 @@ export interface NodeInfo {
   traffic_limit: number
   traffic_limit_type: string
   created_at: string
+  last_seen_at?: string | null
   updated_at: string
 }
 
@@ -115,6 +118,7 @@ export interface RealtimeStatus {
   uptime: number
   process: number
   message: string
+  last_seen_at?: string | null
   updated_at: string
 }
 

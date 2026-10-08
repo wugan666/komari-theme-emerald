@@ -1,4 +1,5 @@
 import type { Client, NodeStatus } from '@/utils/rpc'
+import { useNow } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { parseNodeGroups } from '@/utils/groupHelper'
@@ -124,6 +125,7 @@ const CLIENT_SYNC_FIELDS = [
 type ClientSyncField = (typeof CLIENT_SYNC_FIELDS)[number]
 
 const useNodesStore = defineStore('nodes', () => {
+  const now = useNow({ interval: 60_000 })
   // ===== 状态 =====
   const nodes = ref<NodeData[]>([])
   const lastStatusReceivedAt = ref<number | null>(null)
@@ -217,7 +219,7 @@ const useNodesStore = defineStore('nodes', () => {
       updated_at: client.updated_at,
       // Status 默认值
       online: false,
-      time: '',
+      time: client.last_seen_at ?? '',
       cpu: 0,
       gpu: 0,
       ram: 0,
@@ -435,6 +437,7 @@ const useNodesStore = defineStore('nodes', () => {
   }
 
   return {
+    now,
     // 状态
     nodes,
     lastStatusReceivedAt,

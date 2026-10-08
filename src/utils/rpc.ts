@@ -87,6 +87,7 @@ export interface Client {
   traffic_limit: number
   traffic_limit_type: string
   created_at: string
+  last_seen_at?: string | null
   updated_at: string
 }
 

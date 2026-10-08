@@ -159,8 +159,11 @@ export function buildPingChartData(records: PingChartRecord[], tasks: PingChartT
     const points: PingChartPoint[] = []
     const lossTimes: number[] = []
     for (const [time, sample] of samples) {
+      // Empty buckets caused by timestamp jitter are not failed probes.
+      if (sample.value === null && !sample.failed && !sample.loss)
+        continue
       const previous = points.at(-1)
-      if (previous && previous[1] !== null && sample.value !== null && time - previous[0] > cadence * 1.5)
+      if (previous && previous[1] !== null && sample.value !== null && time - previous[0] > cadence * 3.5)
         points.push([previous[0] + cadence, null])
       points.push([time, sample.value])
       if (sample.loss)

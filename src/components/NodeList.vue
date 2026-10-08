@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { DataTooltip } from '@/components/ui/data-tooltip'
 import { ProgressThin } from '@/components/ui/progress-thin'
 import { useAppStore } from '@/stores/app'
+import { useNodesStore } from '@/stores/nodes'
 import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatRelativeTime, formatUptimeWithFormat, getStatus } from '@/utils/helper'
 import { applyOfflineLast, applyPinnedFirst, getTrafficUsed, sortNodes } from '@/utils/nodeSortHelper'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
@@ -33,6 +34,7 @@ const rowStaggerMs = 35
 const rowStaggerLimit = 12
 
 const appStore = useAppStore()
+const nodesStore = useNodesStore()
 
 const columns: ColumnConfig[] = [
   { key: 'status', label: '状态', width: '36px', sortable: false },
@@ -150,7 +152,7 @@ function formatOfflineTime(node: NodeData): string {
 }
 
 function getOfflineRelative(node: NodeData): string {
-  const relative = formatRelativeTime(node.time)
+  const relative = formatRelativeTime(node.time, nodesStore.now)
   return relative === '-' ? '' : ` ${relative}`
 }
 

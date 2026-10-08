@@ -6,6 +6,7 @@ import CarrierLatency from '@/components/CarrierLatency.vue'
 import { CardX } from '@/components/ui/card-x'
 import { ProgressThin } from '@/components/ui/progress-thin'
 import { useAppStore } from '@/stores/app'
+import { useNodesStore } from '@/stores/nodes'
 import { formatBytesPerSecondWithConfig, formatBytesWithConfig, formatDateTime, formatRelativeTime, formatUptimeWithFormat, getStatus } from '@/utils/helper'
 import { nodeTrafficUsed } from '@/utils/nodeHealth'
 import { getOSImage, getOSName } from '@/utils/osImageHelper'
@@ -17,6 +18,7 @@ const props = defineProps<{ node: NodeData }>()
 const emit = defineEmits<{ click: [] }>()
 
 const appStore = useAppStore()
+const nodesStore = useNodesStore()
 
 const formatBytes = (bytes: number) => formatBytesWithConfig(bytes, appStore.byteDecimals)
 const formatBytesPerSecond = (bytes: number) => formatBytesPerSecondWithConfig(bytes, appStore.byteDecimals)
@@ -44,7 +46,7 @@ function openWithKeyboard(event: KeyboardEvent) {
 const priceTags = computed(() => buildPriceTags(props.node, appStore.lang))
 
 const isPinned = computed(() => appStore.isNodePinned(props.node.uuid))
-const offlineRelative = computed(() => formatRelativeTime(props.node.time))
+const offlineRelative = computed(() => formatRelativeTime(props.node.time, nodesStore.now))
 
 const customTags = computed(() => parseTags(props.node.tags).map(t => t.text))
 
@@ -117,8 +119,8 @@ const network = computed(() => [
         </div>
       </div>
       <div v-else class="flex min-h-32 flex-col justify-center gap-2 rounded-lg bg-muted/50 px-3 text-center">
-        <span class="text-sm font-medium">节点离线{{ offlineRelative !== '-' ? ` · ${offlineRelative}` : '' }}</span>
-        <span class="text-xs text-muted-foreground">最后上报 {{ offlineTime }}</span>
+        <span class="text-sm font-medium">最后在线{{ offlineRelative !== '-' ? ` · ${offlineRelative}` : '' }}</span>
+        <span class="text-xs text-muted-foreground">最后在线 {{ offlineTime }}</span>
         <span class="text-xs text-muted-foreground">点击查看配置与历史数据</span>
       </div>
       <CarrierLatency :uuid="props.node.uuid" :online="props.node.online" />

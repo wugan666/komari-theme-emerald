@@ -10,7 +10,7 @@ const REFRESH_MS = 60_000
 
 export const useCarrierPingStore = defineStore('carrierPing', () => {
   const app = useAppStore()
-  const enabled = computed(() => app.publicSettings?.record_enabled !== false && app.publicSettings?.ping_record_preserve_time !== 0)
+  const enabled = computed(() => app.publicSettings?.ping_record_enabled ?? (app.publicSettings?.ping_record_preserve_time !== 0))
   const tasks = shallowRef<PingTask[]>([])
   const summaries = shallowRef<PingSummary[]>([])
   const history = shallowRef<Map<string, TaskTrends>>(new Map())

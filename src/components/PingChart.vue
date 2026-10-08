@@ -17,6 +17,8 @@ import '@/utils/echarts' // 共享 ECharts 配置
 
 const props = defineProps<{
   uuid: string
+  online?: boolean
+  lastSeen?: string
 }>()
 
 const appStore = useAppStore()
@@ -48,51 +50,63 @@ const chartColors = [
   '#FB923C', // 橙色
 ]
 
-// 从 publicSettings 获取记录保留时间
-const maxPingRecordPreserveTime = computed(() => appStore.publicSettings?.ping_record_preserve_time || 168)
-
-// 视图选项
-const presetViews = [
+// The visible window is independent of retention; historical dates remain selectable.
+const permanent = computed(() => appStore.publicSettings?.ping_record_permanent === true)
+const availableViews = computed(() => [
   { label: '1 小时', hours: 1 },
   { label: '6 小时', hours: 6 },
   { label: '12 小时', hours: 12 },
   { label: '1 天', hours: 24 },
-]
-
-// 可用视图列表
-const availableViews = computed(() => {
-  const views: { label: string, hours: number }[] = []
-  const maxHours = maxPingRecordPreserveTime.value
-
-  for (const v of presetViews) {
-    if (maxHours >= v.hours) {
-      views.push(v)
-    }
-  }
-
-  const maxPreset = presetViews.at(-1)
-  if (maxPreset && maxHours > maxPreset.hours) {
-    const label = maxHours % 24 === 0
-      ? `${Math.floor(maxHours / 24)} 天`
-      : `${maxHours} 小时`
-    views.push({ label, hours: maxHours })
-  }
-  else if (maxHours > 1 && !presetViews.some(v => v.hours === maxHours)) {
-    const label = maxHours % 24 === 0
-      ? `${Math.floor(maxHours / 24)} 天`
-      : `${maxHours} 小时`
-    views.push({ label, hours: maxHours })
-  }
-
-  return views
-})
-
+  { label: '7 天', hours: 168 },
+  { label: '30 天', hours: 720 },
+  { label: '1 年', hours: 8760 },
+])
+const historyRange = ref<{ first_sample: string | null, last_sample: string | null } | null>(null)
+const historyEnd = ref('')
+const rangeReady = ref(false)
+const rangeController = new AbortController()
+const localDateTime = (time: number) => dayjs(time).format('YYYY-MM-DDTHH:mm')
+const displayedEnd = computed(() => historyEnd.value || localDateTime(Date.now()))
 // 当前选中的视图
 const selectedView = ref<string>('')
 const selectedHours = computed(() => {
   const view = availableViews.value.find(v => v.label === selectedView.value)
   return view?.hours || 1
 })
+
+function moveWindow(direction: number) {
+  const end = historyEnd.value ? dayjs(historyEnd.value).valueOf() : Date.now()
+  historyEnd.value = localDateTime(Math.min(Date.now(), end + direction * selectedHours.value * 3600_000))
+}
+function changeHistoryEnd(event: Event) {
+  const value = (event.target as HTMLInputElement).value
+  if (value && Number.isFinite(dayjs(value).valueOf()))
+    historyEnd.value = value
+}
+async function loadHistoryRange() {
+  const uuid = props.uuid
+  rangeReady.value = false
+  try {
+    const result = await rpc.getClient().call<{ first_sample: string | null, last_sample: string | null }>('public:getPingHistoryRange', { entity_id: uuid }, { signal: rangeController.signal })
+    if (uuid !== props.uuid || rangeController.signal.aborted)
+      return
+    historyRange.value = result
+    if (!props.online) {
+      const last = result.last_sample || props.lastSeen
+      if (last && Number.isFinite(Date.parse(last))) {
+        historyEnd.value = localDateTime(Date.parse(last) + 60_000)
+        selectedView.value = '1 天'
+      }
+    }
+  }
+  catch { /* Older servers still support manual date selection. */ }
+  finally {
+    if (uuid === props.uuid && !rangeController.signal.aborted) {
+      rangeReady.value = true
+      void fetchRecords()
+    }
+  }
+}
 
 // 初始化默认视图
 watch(availableViews, (views) => {
@@ -203,7 +217,7 @@ function toggleSmoothInfoTooltip() {
 // ==================== 数据获取 ====================
 
 async function fetchRecords() {
-  if (!props.uuid)
+  if (!props.uuid || !rangeReady.value)
     return
 
   activeRequest?.abort()
@@ -212,6 +226,7 @@ async function fetchRecords() {
   const requestId = ++fetchRequestId
   const uuid = props.uuid
   const hours = selectedHours.value
+  const end = historyEnd.value ? dayjs(historyEnd.value).toISOString() : new Date().toISOString()
 
   loading.value = true
   error.value = null
@@ -222,6 +237,7 @@ async function fetchRecords() {
         metric_keys: ['ping.latency_ms', 'ping.loss'],
         entity_id: uuid,
         hours,
+        end,
         downsample: true,
         max_points: 500,
         aggregation: 'avg',
@@ -229,13 +245,14 @@ async function fetchRecords() {
       rpc.getClient().call<PingMetricStatsResponse>('public:getPingMetricStats', {
         entity_id: uuid,
         hours,
+        end,
       }, { signal: controller.signal }),
     ])
 
     if (requestId !== fetchRequestId)
       return
 
-    sourceLabel.value = metricSourceLabel(metricResult?.series ?? [])
+    sourceLabel.value = metricSourceLabel(metricResult?.series ?? []).replace('；缺失数据保留为空', '')
     const metricIntervals = new Map<number, number>()
     for (const series of metricResult?.series ?? []) {
       const taskId = Number(series.tags?.task_id)
@@ -410,7 +427,8 @@ const pingChartOption = computed(() => {
       name: task.name,
       type: 'line' as const,
       data: taskData?.points ?? [],
-      smooth: showDelay.value && cutPeak.value ? 0.4 : 0,
+      smooth: showDelay.value ? 0.2 : 0,
+      smoothMonotone: 'x' as const,
       showSymbol: false,
       connectNulls: false,
       lineStyle: { width: showDelay.value ? 1.5 : 0, color, cap: 'round' as const },
@@ -523,7 +541,7 @@ const pingChartOption = computed(() => {
 
 // ==================== 生命周期 ====================
 
-watch(selectedView, () => {
+watch([selectedView, historyEnd], () => {
   selectedTaskIds.value = []
   fetchRecords()
 })
@@ -534,7 +552,9 @@ watch(() => props.uuid, () => {
   selectedTaskIds.value = []
   activeTaskTooltipId.value = null
   smoothInfoTooltipOpen.value = false
-  fetchRecords()
+  historyEnd.value = ''
+  historyRange.value = null
+  void loadHistoryRange()
 })
 
 onMounted(() => {
@@ -546,10 +566,11 @@ onMounted(() => {
   if (firstView && !selectedView.value) {
     selectedView.value = firstView.label
   }
-  fetchRecords()
+  void loadHistoryRange()
 })
 
 onBeforeUnmount(() => {
+  rangeController.abort()
   fetchRequestId++
   activeRequest?.abort()
   coarsePointerMediaQuery?.removeEventListener('change', syncTouchTooltipMode)
@@ -557,7 +578,28 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div id="ping-history" class="flex flex-col gap-4">
+    <div class="flex flex-wrap items-center gap-2 text-xs" data-ping-history-controls>
+      <Button variant="outline" size="xs" @click="moveWindow(-1)">
+        上一时段
+      </Button>
+      <label class="flex items-center gap-2">截止时间
+        <input type="datetime-local" :value="displayedEnd" :max="localDateTime(Date.now())" class="min-w-0 rounded border bg-background px-2 py-1" @change="changeHistoryEnd">
+      </label>
+      <Button variant="outline" size="xs" :disabled="!historyEnd" @click="moveWindow(1)">
+        下一时段
+      </Button>
+      <Button variant="outline" size="xs" @click="historyEnd = ''; fetchRecords()">
+        现在
+      </Button>
+      <span v-if="permanent" class="text-muted-foreground">历史永久保留 · 较早数据按时间聚合</span>
+    </div>
+    <p v-if="!online && historyEnd" class="text-xs text-muted-foreground" data-offline-history>
+      节点离线，正在查看最后采样附近的历史；可切换日期继续查看。
+    </p>
+    <p v-if="historyRange?.first_sample" class="text-xs text-muted-foreground">
+      可用采样：{{ dayjs(historyRange.first_sample).format('YYYY-MM-DD HH:mm') }} 至 {{ dayjs(historyRange.last_sample).format('YYYY-MM-DD HH:mm') }}
+    </p>
     <!-- 时间选择器 -->
     <Tabs v-model="selectedView" class="w-full items-center">
       <div class="min-w-0 flex-1 overflow-x-auto rounded-sm pointer-events-auto">
@@ -591,7 +633,7 @@ onBeforeUnmount(() => {
 
     <!-- 内容区域 -->
     <p v-if="sourceLabel" class="text-xs text-muted-foreground" role="status">
-      {{ sourceLabel }}；丢包率仅计已收到的探测结果
+      {{ sourceLabel }}；丢包率仅计已收到的探测结果。短暂缺测连接前后实测点，真实丢包和长时间缺测仍断开。
     </p>
     <Spinner :show="loading" content-class="flex flex-col gap-4">
       <div v-if="error" class="text-red-500 py-8 text-center">
