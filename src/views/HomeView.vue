@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAppStore } from '@/stores/app'
 import { useCarrierPingStore } from '@/stores/carrierPing'
 import { useNodesStore } from '@/stores/nodes'
+import { useReturnRoutesStore } from '@/stores/returnRoutes'
 import { getCountryCodeFromRegion } from '@/utils/geoHelper'
 import { isNodeInGroup, parseNodeGroups } from '@/utils/groupHelper'
 import { matchesNodeHealth, NODE_HEALTH_FILTERS } from '@/utils/nodeHealth'
@@ -25,6 +26,7 @@ const NodeCard = defineAsyncComponent(() => import('@/components/NodeCard.vue'))
 const NodeGeneralCards = defineAsyncComponent(() => import('@/components/NodeGeneralCards.vue'))
 const NodeList = defineAsyncComponent(() => import('@/components/NodeList.vue'))
 const VisitorInfoCard = defineAsyncComponent(() => import('@/components/VisitorInfoCard.vue'))
+const ReturnRouteFleet = defineAsyncComponent(() => import('@/components/ReturnRouteFleet.vue'))
 
 const nodeItemStaggerMs = 35
 const nodeItemStaggerLimit = 12
@@ -33,6 +35,11 @@ const appStore = useAppStore()
 const nodesStore = useNodesStore()
 const router = useRouter()
 const carrierPing = useCarrierPingStore()
+const returnRoutes = useReturnRoutesStore()
+onMounted(returnRoutes.start)
+onActivated(returnRoutes.start)
+onDeactivated(returnRoutes.stop)
+onScopeDispose(returnRoutes.stop)
 onMounted(carrierPing.start)
 onActivated(carrierPing.start)
 onDeactivated(carrierPing.stop)
@@ -220,6 +227,7 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
     <div class="node-info px-4 flex flex-col gap-4">
       <div class="nodes">
         <Tabs v-model="appStore.nodeSelectedGroup" class="w-full flex-col gap-4">
+          <ReturnRouteFleet v-if="appStore.isLoggedIn" :nodes="nodeList" />
           <div class="filter-panel rounded-2xl border border-white/70 dark:border-white/10 glass-surface p-3 sm:p-4">
             <div class="flex flex-wrap items-center gap-3">
               <div class="relative min-w-0 flex-1 basis-48">

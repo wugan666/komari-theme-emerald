@@ -5,6 +5,14 @@
 
 ![preview](/docs/preview.png)
 
+## 2.5.0：三网回程线路
+
+- 配合自有主控 2.3.0，节点详情新增北京、上海、广州三网回程面板，展示线路判定、逐跳 IP、骨干 ASN、延迟、采集时间和历史变化。
+- 首页节点卡显示最近回程结果；管理员可对当前筛选的在线境外 Linux 节点手动批量检测，每批两台，默认跳过近 7 天已采集的同城结果。
+- 每城保留最近 20 次有效结果；节点离线和本次采集失败时仍可查看已有记录。查看页面只读取缓存，不自动发起探测。
+- 检测复用现有 Agent，需要 Linux、Python 3、原始 ICMP 权限及已启用的远程控制。不会安装软件或更改节点安全设置。
+- 判定参考 [Komari Transit](https://github.com/yyy622hhh/komari-theme-transit)，历史呈现借鉴 [IPQA Alert Report](https://github.com/Chen017/komari-plugin-ipqa-alert-report)。证据不足会明确显示未识别，星号不等于业务丢包。
+
 ## 2.3.2：原版地球动效与毛玻璃
 
 - 保留 Emerald 气泡、流体 Shader，右上角可切换气泡 / 流体 / 纯色，支持背景强度调节并记住选择。
@@ -17,7 +25,7 @@
 
 ## 使用
 
-1. 从 [Release 页面](https://github.com/R1ddle1337/komari-theme-emerald/releases) 下载最新的 `komari-theme-emerald-build-*.zip` 文件
+1. 从 [Release 页面](https://github.com/wugan666/komari-theme-emerald/releases) 下载最新的 `komari-theme-emerald-build-*.zip` 文件
 2. 登录 Komari Monitor 后，点击 `设置`，选择 `主题管理` 选项卡
 3. 点击 `上传主题` 按钮，选择下载的 `komari-theme-emerald-build-*.zip` 文件
 4. 刷新页面，即可看到新的主题

@@ -3,6 +3,7 @@ import type { NodeData } from '@/stores/nodes'
 import { Icon } from '@iconify/vue'
 import { computed } from 'vue'
 import CarrierLatency from '@/components/CarrierLatency.vue'
+import ReturnRouteBadges from '@/components/ReturnRouteBadges.vue'
 import { CardX } from '@/components/ui/card-x'
 import { ProgressThin } from '@/components/ui/progress-thin'
 import { useAppStore } from '@/stores/app'
@@ -124,6 +125,7 @@ const network = computed(() => [
         <span class="text-xs text-muted-foreground">点击查看配置与历史数据</span>
       </div>
       <CarrierLatency :uuid="props.node.uuid" :online="props.node.online" />
+      <ReturnRouteBadges :uuid="props.node.uuid" />
       <div v-if="props.node.online" class="grid grid-cols-2 gap-3 border-t border-border pt-3">
         <div v-for="direction in network" :key="direction.label" class="min-w-0">
           <div class="mb-1 flex items-center gap-1 text-[11px] text-muted-foreground">

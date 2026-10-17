@@ -18,6 +18,7 @@ import { getBillingCycleText, getExpireStatus, getExpireText } from '@/utils/tag
 
 const LoadChart = defineAsyncComponent(() => import('@/components/LoadChart.vue'))
 const PingChart = defineAsyncComponent(() => import('@/components/PingChart.vue'))
+const ReturnRoutePanel = defineAsyncComponent(() => import('@/components/ReturnRoutePanel.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -461,6 +462,7 @@ const trafficProgressStyle = computed(() => ({
         </CardX>
       </div>
 
+      <ReturnRoutePanel :key="data.uuid" :uuid="data.uuid" :online="data.online" class="px-4" />
       <LoadChart :key="data.uuid" :uuid="data.uuid" class="px-4" />
       <PingChart :key="data.uuid" :uuid="data.uuid" :online="data.online" :last-seen="data.time" class="px-4" />
     </template>
