@@ -62,12 +62,12 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: emerald-release
-          path: komari-theme-emerald-build-*.zip
+          path: komari-theme-liquidbounce-build-*.zip
           if-no-files-found: error
           retention-days: 14
 
   publish:
-    if: github.repository == 'wugan666/komari-theme-emerald' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request' && needs.build.outputs.changed == 'true'
+    if: github.repository == 'wugan666/komari-theme-liquidbounce' && github.ref == 'refs/heads/master' && github.event_name != 'pull_request' && needs.build.outputs.changed == 'true'
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -94,7 +94,7 @@ jobs:
             echo "Tag $tag already exists; use a new version."
             exit 1
           fi
-          assets=(release/komari-theme-emerald-build-*.zip)
+          assets=(release/komari-theme-liquidbounce-build-*.zip)
           [ "${#assets[@]}" -eq 1 ] && [ -f "${assets[0]}" ]
           gh release create "$tag" "${assets[0]}" --repo "$REPO" --target "$COMMIT" --title "$tag" --generate-notes --draft
           gh release edit "$tag" --repo "$REPO" --draft=false --latest

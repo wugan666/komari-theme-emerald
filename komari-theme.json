@@ -1,14 +1,14 @@
 {
-  "name": "Komari Emerald",
-  "short": "Emerald",
-  "description": "An emerald theme for Komari",
-  "version": "2.5.1",
+  "name": "LiquidBounce",
+  "short": "liquidbounce",
+  "description": "LiquidBounce 主题：气泡/流体 Shader、原版地球、毛玻璃卡片与三网回程",
+  "version": "2.6.0",
   "author": "wugan666 & Tokinx",
-  "url": "https://github.com/wugan666/komari-theme-emerald",
+  "url": "https://github.com/wugan666/komari-theme-liquidbounce",
   "preview": "preview.png",
   "configuration": {
     "type": "managed",
-    "name": "Emerald 设置",
+    "name": "LiquidBounce 设置",
     "data": [
       {
         "name": "基础设置",
