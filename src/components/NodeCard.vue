@@ -76,7 +76,8 @@ const network = computed(() => [
 <template>
   <CardX
     role="link" tabindex="0" :aria-label="`查看 ${props.node.name} 详情`"
-    class="node-card h-full w-full cursor-pointer rounded-2xl border border-white/70 dark:border-white/10 glass-surface transition-[border-color,box-shadow,transform] duration-200 hover:border-primary/30 hover:-translate-y-0.5 motion-reduce:transform-none focus-visible:outline-2 focus-visible:outline-primary"
+    :class="props.node.online || !appStore.compactOfflineNodes ? 'h-full' : ''"
+    class="node-card w-full cursor-pointer rounded-2xl border border-white/70 dark:border-white/10 glass-surface transition-[border-color,box-shadow,transform] duration-200 hover:border-primary/30 hover:-translate-y-0.5 motion-reduce:transform-none focus-visible:outline-2 focus-visible:outline-primary"
     :header-class="isCompact ? '!px-3 !pt-3 !pb-2' : '!px-4 !pt-4 !pb-3'"
     :content-class="isCompact ? '!p-3 !pt-0' : '!p-4 !pt-0'"
     @keydown="openWithKeyboard" @click="emit('click')"
