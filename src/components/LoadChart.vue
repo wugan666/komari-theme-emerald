@@ -125,13 +125,13 @@ const availableViews = computed(() => {
   const maxPreset = presetViews.at(-1)
   if (maxPreset && maxHours > maxPreset.hours) {
     const label = maxHours % 24 === 0
-      ? `${Math.floor(maxHours / 24)} 天`
+      ? (maxHours >= 24 * 3650 ? '全部' : `${Math.floor(maxHours / 24)} 天`)
       : `${maxHours} 小时`
     views.push({ label, hours: maxHours })
   }
   else if (maxHours > 4 && !presetViews.some(v => v.hours === maxHours)) {
     const label = maxHours % 24 === 0
-      ? `${Math.floor(maxHours / 24)} 天`
+      ? (maxHours >= 24 * 3650 ? '全部' : `${Math.floor(maxHours / 24)} 天`)
       : `${maxHours} 小时`
     views.push({ label, hours: maxHours })
   }
