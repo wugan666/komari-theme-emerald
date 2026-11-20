@@ -9,7 +9,9 @@ const canvasRef = ref<HTMLCanvasElement>()
 let gl: WebGLRenderingContext | null = null
 let program: WebGLProgram | null = null
 let animationId = 0
-let startTime = 0
+// 动画时钟只在真正绘制时前进：滚动冻结、标签页切走或限帧跳过之后从原处继续，
+// 不会因为按墙上时钟取时间而一下子跳过去（那就是背景“抽搐”的来源）。
+let animTime = 0
 let lastFrameTime = 0
 
 const isMobile = window.innerWidth < 768
@@ -51,7 +53,11 @@ void main() {
 // 亮色把同一组光幕化成淡彩丝带。画面本身很柔和，所以用低分辨率渲染再由浏览器放大。
 function getFragmentShader(octaves: number): string {
   return `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
+#endif
 
 uniform float iTime;
 uniform vec2 iResolution;
@@ -213,11 +219,13 @@ function render(now: number) {
   else if (now - lastFrameTime < getFrameInterval()) {
     return
   }
+  if (lastFrameTime)
+    animTime += Math.min(now - lastFrameTime, 100)
   lastFrameTime = now
 
   resize()
 
-  const time = (now - startTime) / 1000.0
+  const time = animTime / 1000.0
   gl.uniform1f(uTimeLoc, time)
   gl.uniform2f(uResLoc, canvasRef.value!.width, canvasRef.value!.height)
   gl.uniform1f(uDarkLoc, appStore.isDark ? 1.0 : 0.0)
@@ -226,7 +234,6 @@ function render(now: number) {
 }
 
 onMounted(() => {
-  startTime = performance.now()
   lastFrameTime = 0
   window.addEventListener('resize', handleWindowResize)
   if (initWebGL()) {

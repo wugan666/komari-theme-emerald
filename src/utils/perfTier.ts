@@ -92,7 +92,7 @@ export async function initPerfTier(): Promise<void> {
  * 滚动冻结：滚动中及结束后 idleMs 内挂起背景重绘，
  * 避免"滚动失效 + 动画失效"双重叠加。调用方在渲染循环里查询。
  */
-export function createScrollFreeze(idleMs = 300): { isFrozen: () => boolean, dispose: () => void } {
+export function createScrollFreeze(idleMs = 150): { isFrozen: () => boolean, dispose: () => void } {
   let frozenUntil = 0
   const onScroll = () => {
     frozenUntil = performance.now() + idleMs
