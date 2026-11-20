@@ -5,6 +5,7 @@ import { useAppStore } from '@/stores/app'
 
 const ShaderBackground = defineAsyncComponent(() => import('@/components/ShaderBackground.vue'))
 const ShaderBackgroundLiquid = defineAsyncComponent(() => import('@/components/ShaderBackgroundLiquid.vue'))
+const ShaderBackgroundAurora = defineAsyncComponent(() => import('@/components/ShaderBackgroundAurora.vue'))
 const appStore = useAppStore()
 
 const isLoaded = ref(false)
@@ -134,6 +135,7 @@ onUnmounted(() => {
   <div class="background-container" :style="backgroundContainerStyle">
     <div v-if="!hasCustomBackground && appStore.shaderType !== 'none'" class="absolute inset-0" :style="{ opacity: appStore.shaderIntensity }" data-shader-background :data-shader="appStore.shaderType">
       <ShaderBackgroundLiquid v-if="appStore.shaderType === 'liquid'" />
+      <ShaderBackgroundAurora v-else-if="appStore.shaderType === 'aurora'" />
       <ShaderBackground v-else />
     </div>
     <Transition name="fade">

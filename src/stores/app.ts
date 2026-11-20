@@ -4,7 +4,7 @@ import { usePreferredDark, useStorage, useStorageAsync } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-export type ShaderType = 'bubbles' | 'liquid' | 'none'
+export type ShaderType = 'bubbles' | 'liquid' | 'aurora' | 'none'
 export type ThemeMode = 'auto' | 'light' | 'dark'
 type Lang = 'zh-CN' | 'en-US'
 type NodeViewMode = 'card' | 'list'
@@ -28,18 +28,28 @@ const useAppStore = defineStore('app', () => {
 
   // 使用 VueUse 的 useStorageAsync 实现自动持久化
   const themeMode = useStorageAsync<ThemeMode>('themeMode', 'auto', localStorage)
-  const shaderType = useStorage<ShaderType>('shaderType', 'bubbles')
   const shaderIntensity = useStorage<number>('emerald:shader-intensity', 0.65)
-  watch(shaderType, (value) => {
-    if (!['bubbles', 'liquid', 'none'].includes(value))
-      shaderType.value = 'bubbles'
-  }, { immediate: true })
   watch(shaderIntensity, (value) => {
     if (!Number.isFinite(value) || value < 0.2 || value > 1)
       shaderIntensity.value = 0.65
   }, { immediate: true })
   const lang = ref<Lang>('zh-CN')
   const publicSettings = ref<PublicSettings>()
+
+  // 特色背景：访客在页面上选过就用访客的选择，否则跟随主题设置里的默认背景。
+  // 不写入默认值，这样站长改默认背景后，没有手动选过的访客会立刻跟随。
+  const SHADER_TYPES: ShaderType[] = ['bubbles', 'liquid', 'aurora', 'none']
+  const storedShaderType = useStorage<ShaderType | null>('liquidbounce:shader-type', null, undefined, { writeDefaults: false })
+  const defaultShaderType = computed<ShaderType>(() => {
+    const value = publicSettings.value?.theme_settings?.defaultShaderType as ShaderType
+    return SHADER_TYPES.includes(value) ? value : 'bubbles'
+  })
+  const shaderType = computed<ShaderType>({
+    get: () => storedShaderType.value && SHADER_TYPES.includes(storedShaderType.value) ? storedShaderType.value : defaultShaderType.value,
+    set: (value) => {
+      storedShaderType.value = value
+    },
+  })
   const nodeSelectedGroup = useStorageAsync<string>('nodeSelectedGroup', 'all', localStorage)
   const isLoggedIn = ref<boolean>(false)
   const connectionError = ref<boolean>(false)

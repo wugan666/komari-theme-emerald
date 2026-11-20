@@ -16,6 +16,7 @@ const siteFavicon = ref('/favicon.ico')
 const shaderOptions: { value: ShaderType, label: string, icon: string }[] = [
   { value: 'bubbles', label: '气泡', icon: 'tabler:bubble' },
   { value: 'liquid', label: '流体', icon: 'tabler:ripple' },
+  { value: 'aurora', label: '极光', icon: 'tabler:sparkles' },
   { value: 'none', label: '纯色', icon: 'tabler:square' },
 ]
 
@@ -108,7 +109,7 @@ const sitename = computed(() => appStore.publicSettings?.sitename || 'Komari Mon
                 <div class="mb-3 text-sm font-semibold">
                   特色背景
                 </div>
-                <div class="grid grid-cols-3 gap-2">
+                <div class="grid grid-cols-2 gap-2">
                   <button v-for="option in shaderOptions" :key="option.value" type="button" :aria-pressed="appStore.shaderType === option.value" class="flex flex-col items-center gap-2 rounded-lg border px-2 py-3 text-xs transition-colors focus-visible:outline-2" :class="appStore.shaderType === option.value ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border hover:bg-muted'" @click="appStore.shaderType = option.value">
                     <Icon :icon="option.icon" width="20" />{{ option.label }}
                   </button>
