@@ -1,12 +1,27 @@
 <script setup lang="ts">
 import { useDocumentVisibility, usePreferredReducedMotion } from '@vueuse/core'
-import { computed, defineAsyncComponent, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
+import ShaderCanvas from '@/components/ShaderCanvas.vue'
 import { useAppStore } from '@/stores/app'
 
-const ShaderBackground = defineAsyncComponent(() => import('@/components/ShaderBackground.vue'))
-const ShaderBackgroundLiquid = defineAsyncComponent(() => import('@/components/ShaderBackgroundLiquid.vue'))
-const ShaderBackgroundAurora = defineAsyncComponent(() => import('@/components/ShaderBackgroundAurora.vue'))
 const appStore = useAppStore()
+
+// 每种背景的着色器源码按需加载；scale 是相对 CSS 像素的渲染分辨率（极光没有硬边，可以更低）
+const SHADERS = {
+  bubbles: { load: () => import('@/shaders/bubbles'), scale: 1, mobileScale: 0.35 },
+  liquid: { load: () => import('@/shaders/liquid'), scale: 1, mobileScale: 0.25 },
+  aurora: { load: () => import('@/shaders/aurora'), scale: 0.5, mobileScale: 0.35 },
+}
+const shader = shallowRef<{ fragment: (mobile: boolean) => string, scale: number, mobileScale: number } | null>(null)
+watch(() => appStore.shaderType, async (type) => {
+  shader.value = null
+  if (type === 'none')
+    return
+  const entry = SHADERS[type]
+  const module = await entry.load()
+  if (appStore.shaderType === type)
+    shader.value = { fragment: module.fragment, scale: entry.scale, mobileScale: entry.mobileScale }
+}, { immediate: true })
 
 const isLoaded = ref(false)
 const hasError = ref(false)
@@ -134,9 +149,7 @@ onUnmounted(() => {
 <template>
   <div class="background-container" :style="backgroundContainerStyle">
     <div v-if="!hasCustomBackground && appStore.shaderType !== 'none'" class="absolute inset-0" :style="{ opacity: appStore.shaderIntensity }" data-shader-background :data-shader="appStore.shaderType">
-      <ShaderBackgroundLiquid v-if="appStore.shaderType === 'liquid'" />
-      <ShaderBackgroundAurora v-else-if="appStore.shaderType === 'aurora'" />
-      <ShaderBackground v-else />
+      <ShaderCanvas v-if="shader" :key="appStore.shaderType" :fragment="shader.fragment" :scale="shader.scale" :mobile-scale="shader.mobileScale" />
     </div>
     <Transition name="fade">
       <div v-if="showLoadingBackground" class="background-loading" />

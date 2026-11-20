@@ -6,14 +6,15 @@ export type PerfTier = 'high' | 'medium' | 'low'
 const STORAGE_KEY = 'emerald-perf-tier-v1'
 const reducedMotion = typeof window === 'undefined' ? null : window.matchMedia('(prefers-reduced-motion: reduce)')
 
+// 档位不再跨访问记住：一次加载时的偶然卡顿不应该让这台设备的背景永远静止。
+// 旧版本存下的结果在这里清掉。
 function readStoredTier(): PerfTier | null {
   try {
-    const value = localStorage.getItem(STORAGE_KEY)
-    return value === 'high' || value === 'medium' || value === 'low' ? value : null
+    localStorage.removeItem(STORAGE_KEY)
   }
   catch {
-    return null
   }
+  return null
 }
 
 // 探测前的保守默认：桌面 high，移动端 medium，明显弱的设备直接 low
@@ -30,13 +31,7 @@ export const perfTier = ref<PerfTier>(reducedMotion?.matches ? 'low' : readStore
 
 function applyTier(tier: PerfTier, persist: boolean): void {
   perfTier.value = tier
-  if (persist) {
-    try {
-      localStorage.setItem(STORAGE_KEY, tier)
-    }
-    catch {
-    }
-  }
+  void persist
 }
 
 function measureFps(durationMs: number): Promise<number> {
