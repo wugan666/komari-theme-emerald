@@ -119,13 +119,15 @@ const network = computed(() => [
           </div>
         </div>
       </div>
-      <div v-else class="flex min-h-32 flex-col justify-center gap-2 rounded-lg bg-muted/50 px-3 text-center">
-        <span class="text-sm font-medium">最后在线{{ offlineRelative !== '-' ? ` · ${offlineRelative}` : '' }}</span>
-        <span class="text-xs text-muted-foreground">最后在线 {{ offlineTime }}</span>
+      <div v-else class="flex flex-col justify-center gap-1.5 rounded-lg bg-muted/50 px-3 text-center" :class="appStore.compactOfflineNodes ? 'py-4' : 'min-h-32'">
+        <span class="text-sm font-medium">{{ offlineRelative !== '-' ? `最后在线 · ${offlineRelative}` : '离线 · 最后在线时间未知' }}</span>
+        <span v-if="offlineTime !== '-'" class="text-xs text-muted-foreground">{{ offlineTime }}</span>
         <span class="text-xs text-muted-foreground">点击查看配置与历史数据</span>
       </div>
-      <CarrierLatency :uuid="props.node.uuid" :online="props.node.online" />
-      <ReturnRouteBadges :uuid="props.node.uuid" />
+      <template v-if="props.node.online || !appStore.compactOfflineNodes">
+        <CarrierLatency v-if="appStore.showCarrierLatency" :uuid="props.node.uuid" :online="props.node.online" />
+        <ReturnRouteBadges v-if="appStore.showReturnRoute" :uuid="props.node.uuid" />
+      </template>
       <div v-if="props.node.online" class="grid grid-cols-2 gap-3 border-t border-border pt-3">
         <div v-for="direction in network" :key="direction.label" class="min-w-0">
           <div class="mb-1 flex items-center gap-1 text-[11px] text-muted-foreground">

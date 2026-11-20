@@ -5,10 +5,10 @@
 Every change must follow these steps in order:
 
 1. Bump `version` in `komari-theme.json` (semver, match release tag)
-2. **Clean old zips**: `rm -f komari-theme-emerald-build-*.zip`
-3. `bun run build` — produces `komari-theme-emerald-build-<sha>.zip`
+2. **Clean old zips**: `rm -f komari-theme-liquidbounce-build-*.zip`
+3. `bun run build` — produces `komari-theme-liquidbounce-build-<sha>.zip`
 4. `git add -A && git commit && git push origin master`
-5. `gh release create vX.Y.Z ./komari-theme-emerald-build-<sha>.zip --repo wugan666/komari-theme-liquidbounce --title "vX.Y.Z" --notes "..."`
+5. `gh release create vX.Y.Z ./komari-theme-liquidbounce-build-<sha>.zip --repo wugan666/komari-theme-liquidbounce --title "vX.Y.Z" --notes "..."`
 
 All three version numbers must match: `komari-theme.json` version = git tag = release title.
 

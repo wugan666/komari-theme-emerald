@@ -82,6 +82,11 @@ const useAppStore = defineStore('app', () => {
   // 计算属性：从主题配置获取默认视图模式
   const defaultViewMode = computed<NodeViewMode>(() => {
     const settings = publicSettings.value?.theme_settings
+    // 手机上卡片视图一屏只能看一台，可以单独指定更紧凑的默认视图
+    const mobileMode = settings?.mobileDefaultViewMode
+    if ((mobileMode === 'card' || mobileMode === 'list') && typeof window !== 'undefined' && window.innerWidth < 768) {
+      return mobileMode
+    }
     if (settings && typeof settings.defaultViewMode === 'string') {
       const mode = settings.defaultViewMode
       if (mode === 'card' || mode === 'list') {
@@ -212,6 +217,17 @@ const useAppStore = defineStore('app', () => {
     }
     return true
   })
+
+  // 默认开启的布尔型主题开关：只有显式存成 false 才关闭
+  function themeSwitch(key: string, fallback: boolean) {
+    return computed<boolean>(() => {
+      const value = publicSettings.value?.theme_settings?.[key]
+      return typeof value === 'boolean' ? value : fallback
+    })
+  }
+  const compactOfflineNodes = themeSwitch('compactOfflineNodes', true)
+  const showCarrierLatency = themeSwitch('showCarrierLatency', true)
+  const showReturnRoute = themeSwitch('showReturnRoute', true)
 
   const visitorInfoCardEnabled = computed<boolean>(() => {
     const settings = publicSettings.value?.theme_settings
@@ -439,6 +455,9 @@ const useAppStore = defineStore('app', () => {
     nodeCardMinWidth,
     showNodeConnections,
     showNodeUptime,
+    compactOfflineNodes,
+    showCarrierLatency,
+    showReturnRoute,
     visitorInfoCardEnabled,
     hideAdminEntryWhenLoggedOut,
     disablePageAnimation,

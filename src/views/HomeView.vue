@@ -305,7 +305,7 @@ function getNodeItemTransitionStyle(index: number): Record<string, string> {
               <div
                 v-for="(node, index) in nodeList"
                 :key="getNodeItemTransitionKey(node)"
-                class="min-w-0"
+                class="node-card-cell min-w-0"
                 :style="getNodeItemTransitionStyle(index)"
               >
                 <NodeCard :node="node" @click="handleNodeClick(node)" />

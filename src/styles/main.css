@@ -209,3 +209,12 @@ html.no-glass .glass-surface {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
+
+/* 屏幕外的节点卡片不参与布局和绘制（毛玻璃卡片很贵）；高度按上次实际渲染值占位，滚动条不跳。 */
+.node-card-cell {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 568px;
+  /* content-visibility 会按盒子裁剪绘制：留出边距给卡片阴影和悬停上移，再用负外边距抵消布局 */
+  padding: 14px;
+  margin: -14px;
+}

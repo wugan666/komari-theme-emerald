@@ -10,7 +10,7 @@ const coordinates = computed(() => props.points.map((p, i) => ({
   ...p,
 })))
 const segments = computed(() => {
-  const paths: { line: string, area: string }[] = []
+  const paths: { line: string, area: string, dot: { x: number, y: number } | null }[] = []
   let segment: { x: number, y: number }[] = []
   let lastTime = 0
   function flush() {
@@ -19,7 +19,8 @@ const segments = computed(() => {
     const first = segment[0]!
     const last = segment.at(-1)!
     const line = segment.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ')
-    paths.push({ line, area: `${line} L${last.x},33 L${first.x},33 Z` })
+    // 只有孤立的单个样本需要画点；连续样本由折线表达，避免每张卡片上百个 circle 节点
+    paths.push({ line, area: `${line} L${last.x},33 L${first.x},33 Z`, dot: segment.length === 1 ? first : null })
     segment = []
   }
   for (const p of coordinates.value) {
@@ -36,7 +37,6 @@ const segments = computed(() => {
   flush()
   return paths
 })
-const samples = computed(() => coordinates.value.filter(p => p.y !== null))
 const losses = computed(() => coordinates.value.filter(p => p.loss !== null && p.loss > 0))
 </script>
 
@@ -48,8 +48,8 @@ const losses = computed(() => coordinates.value.filter(p => p.loss !== null && p
     <template v-for="(segment, i) in segments" :key="i">
       <path :d="segment.area" :fill="`url(#${gradient})`" />
       <path :d="segment.line" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+      <circle v-if="segment.dot" :cx="segment.dot.x" :cy="segment.dot.y" r="1.1" fill="currentColor" />
     </template>
-    <circle v-for="point in samples" :key="point.time" :cx="point.x" :cy="point.y!" r="1.1" fill="currentColor" />
     <rect v-for="point in losses" :key="point.time" :x="point.x - 1" :y="42 - Math.max(2, point.loss! / 100 * 7)" width="2" :height="Math.max(2, point.loss! / 100 * 7)" rx="0.5" class="fill-destructive" />
   </svg>
 </template>

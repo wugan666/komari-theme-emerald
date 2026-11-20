@@ -38,6 +38,14 @@
         "help": "节点列表的默认显示模式"
       },
       {
+        "key": "mobileDefaultViewMode",
+        "name": "手机端默认视图",
+        "type": "select",
+        "default": "follow",
+        "options": "follow,card,list",
+        "help": "手机上的默认显示模式：follow 表示与上面的默认视图一致；节点多时建议选 list。访客自己切换过视图后以访客的选择为准"
+      },
+      {
         "name": "公告设置",
         "type": "title"
       },
@@ -114,6 +122,27 @@
         "type": "switch",
         "default": true,
         "help": "在节点卡片上显示服务器在线时长"
+      },
+      {
+        "key": "showCarrierLatency",
+        "name": "显示三网延迟",
+        "type": "switch",
+        "default": true,
+        "help": "在节点卡片上显示电信/联通/移动延迟与 30 分钟趋势"
+      },
+      {
+        "key": "showReturnRoute",
+        "name": "显示三网回程",
+        "type": "switch",
+        "default": true,
+        "help": "在节点卡片上显示三网回程线路标签"
+      },
+      {
+        "key": "compactOfflineNodes",
+        "name": "精简离线节点卡片",
+        "type": "switch",
+        "default": true,
+        "help": "离线节点只显示最后在线时间，不再占用三网延迟和回程的位置"
       },
       {
         "key": "visitorInfoCardEnabled",

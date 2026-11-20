@@ -3,11 +3,12 @@ import type { NodeData } from '@/stores/nodes'
 import type { CurrencyCode } from '@/utils/financeHelper'
 import { Icon } from '@iconify/vue'
 import { PopoverClose, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from 'reka-ui'
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ProgressThin } from '@/components/ui/progress-thin'
 import { useAppStore } from '@/stores/app'
 import { useNodesStore } from '@/stores/nodes'
 import * as financeHelper from '@/utils/financeHelper'
-import { formatBytesPerSecondSplit, formatBytesSplit } from '@/utils/helper'
+import { formatBytesPerSecondSplit, formatBytesSplit, getStatus } from '@/utils/helper'
 
 const props = defineProps<{
   nodes?: NodeData[]
@@ -172,7 +173,39 @@ onMounted(async () => {
   const { rates } = await financeHelper.getDailyExchangeRates()
   exchangeRates.value = rates
 })
+// 最近一段时间的合计速率，用于总览卡片下方的走势线（只在内存里保留）
+const SPEED_HISTORY_LENGTH = 40
+const speedHistory = ref<{ up: number, down: number }[]>([])
+watch(totalSpeed, (speed) => {
+  speedHistory.value = [...speedHistory.value, speed].slice(-SPEED_HISTORY_LENGTH)
+}, { immediate: true })
+function sparkPath(values: number[]): { line: string, area: string } | null {
+  if (values.length < 2)
+    return null
+  const peak = Math.max(1, ...values)
+  const line = values.map((value, i) => `${i ? 'L' : 'M'}${(i / (values.length - 1) * 100).toFixed(2)},${(27 - value / peak * 24).toFixed(2)}`).join(' ')
+  return { line, area: `${line} L100,30 L0,30 Z` }
+}
+function percent(used: number, total: number): number {
+  return total > 0 ? Math.min(100, used / total * 100) : 0
+}
+type TileFooter
+  = | { type: 'bar', percent: number }
+    | { type: 'rows', rows: [string, string][] }
+    | { type: 'spark', path: ReturnType<typeof sparkPath> }
+
 const summaryMetrics = computed(() => {
+  const memoryPercent = percent(totalMemory.value.used, totalMemory.value.total)
+  const diskPercent = percent(totalDisk.value.used, totalDisk.value.total)
+  const footers: Record<string, TileFooter> = {
+    memory: { type: 'bar', percent: memoryPercent },
+    disk: { type: 'bar', percent: diskPercent },
+    finance: { type: 'rows', rows: [['月均支出', `${formattedMonthlyAverageCost.value.symbol}${formattedMonthlyAverageCost.value.value}`], ['总价值', `${formattedTotalValue.value.symbol}${formattedTotalValue.value.value}`]] },
+    traffic: { type: 'rows', rows: [['↑ 上行', `${formattedTrafficUp.value.value} ${formattedTrafficUp.value.unit}`], ['↓ 下行', `${formattedTrafficDown.value.value} ${formattedTrafficDown.value.unit}`]] },
+    speedUp: { type: 'spark', path: sparkPath(speedHistory.value.map(item => item.up)) },
+    speedDown: { type: 'spark', path: sparkPath(speedHistory.value.map(item => item.down)) },
+    connections: { type: 'rows', rows: [['TCP', formatNumber(totalConnections.value.tcp)], ['UDP', formatNumber(totalConnections.value.udp)]] },
+  }
   const values = {
     memory: { label: '内存用量', icon: 'tabler:cpu', value: `${formattedMemoryUsed.value.value} ${formattedMemoryUsed.value.unit}`, detail: `总计 ${formattedMemoryTotal.value.value} ${formattedMemoryTotal.value.unit}`, hint: '当前用量 / 全部节点配置容量' },
     disk: { label: '硬盘用量', icon: 'tabler:database', value: `${formattedDiskUsed.value.value} ${formattedDiskUsed.value.unit}`, detail: `总计 ${formattedDiskTotal.value.value} ${formattedDiskTotal.value.unit}`, hint: '当前用量 / 全部节点配置容量' },
@@ -182,7 +215,7 @@ const summaryMetrics = computed(() => {
     speedDown: { label: '实时下行', icon: 'tabler:arrow-down-left', value: `${formattedSpeedDown.value.value} ${formattedSpeedDown.value.unit}`, detail: '在线节点合计', hint: '' },
     connections: { label: '连接数', icon: 'tabler:network', value: formatNumber(totalConnections.value.total), detail: 'TCP + UDP', hint: `TCP ${totalConnections.value.tcp} / UDP ${totalConnections.value.udp}` },
   }
-  return appStore.summaryCards.map(key => ({ key, ...values[key] }))
+  return appStore.summaryCards.map(key => ({ key, ...values[key], footer: footers[key]! }))
 })
 </script>
 
@@ -197,6 +230,9 @@ const summaryMetrics = computed(() => {
                 <span class="mb-2 sm:mb-4 flex items-center justify-between text-xs text-muted-foreground">{{ metric.label }}<span class="rounded-lg bg-primary/10 p-1.5 text-primary"><Icon :icon="metric.icon" width="16" /></span></span>
                 <span class="block truncate text-base sm:text-2xl font-semibold tracking-tight">{{ metric.value }}</span>
                 <span class="mt-1 hidden sm:block text-[11px] text-muted-foreground">{{ metric.detail }} · 查看明细</span>
+                <span v-if="metric.footer.type === 'rows'" class="mt-auto hidden w-full flex-col gap-1 pt-3 text-[11px] text-muted-foreground lg:flex">
+                  <span v-for="row in metric.footer.rows" :key="row[0]" class="flex justify-between gap-2"><span>{{ row[0] }}</span><span class="truncate font-medium text-foreground/80">{{ row[1] }}</span></span>
+                </span>
               </button>
             </PopoverTrigger>
             <PopoverPortal>
@@ -235,7 +271,7 @@ const summaryMetrics = computed(() => {
               </PopoverContent>
             </PopoverPortal>
           </PopoverRoot>
-          <div v-else class="min-w-0 summary-tile rounded-2xl border border-white/70 dark:border-white/10 glass-surface p-3 sm:p-4" :title="metric.hint" :data-metric="metric.key">
+          <div v-else class="flex min-w-0 flex-col summary-tile rounded-2xl border border-white/70 dark:border-white/10 glass-surface p-3 sm:p-4" :title="metric.hint" :data-metric="metric.key">
             <div class="mb-2 sm:mb-4 flex items-center justify-between gap-2 text-xs text-muted-foreground">
               {{ metric.label }}<span class="rounded-lg bg-primary/10 p-1.5 text-primary"><Icon :icon="metric.icon" width="16" /></span>
             </div>
@@ -244,6 +280,25 @@ const summaryMetrics = computed(() => {
             </div>
             <div class="mt-1 hidden sm:block truncate text-[11px] text-muted-foreground">
               {{ metric.detail }}
+            </div>
+            <!-- 大屏下卡片与地球等高，下半部分用来放用量条 / 分项 / 走势 -->
+            <div class="mt-auto hidden pt-3 lg:block">
+              <template v-if="metric.footer.type === 'bar'">
+                <div class="mb-1.5 flex justify-between text-[11px] text-muted-foreground">
+                  <span>已用</span><span class="font-medium text-foreground/80">{{ metric.footer.percent.toFixed(1) }}%</span>
+                </div>
+                <ProgressThin :percentage="metric.footer.percent" :status="getStatus(metric.footer.percent)" :height="5" />
+              </template>
+              <div v-else-if="metric.footer.type === 'rows'" class="flex flex-col gap-1 text-[11px] text-muted-foreground">
+                <div v-for="row in metric.footer.rows" :key="row[0]" class="flex justify-between gap-2">
+                  <span>{{ row[0] }}</span><span class="truncate font-medium text-foreground/80">{{ row[1] }}</span>
+                </div>
+              </div>
+              <svg v-else-if="metric.footer.path" viewBox="0 0 100 30" preserveAspectRatio="none" class="block h-9 w-full text-primary" aria-hidden="true">
+                <path :d="metric.footer.path.area" fill="currentColor" fill-opacity="0.12" />
+                <path :d="metric.footer.path.line" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+              </svg>
+              <div v-else class="h-9" />
             </div>
           </div>
         </template>
