@@ -2,7 +2,7 @@
 import { useDocumentVisibility, useElementVisibility } from '@vueuse/core'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { createScrollFreeze, perfTier } from '@/utils/perfTier'
+import { perfTier } from '@/utils/perfTier'
 
 const appStore = useAppStore()
 const canvasRef = ref<HTMLCanvasElement>()
@@ -30,7 +30,6 @@ watch(() => appStore.isDark, () => {
 function handleWindowResize() {
   lowTierPainted = false
 }
-const scrollFreeze = createScrollFreeze()
 
 // Visibility-based pause
 const documentVisibility = useDocumentVisibility()
@@ -400,9 +399,6 @@ function render(now: number) {
       return
     lowTierPainted = true
   }
-  else if (scrollFreeze.isFrozen()) {
-    return
-  }
   else if (now - lastFrameTime < getFrameInterval()) {
     return
   }
@@ -430,7 +426,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleWindowResize)
-  scrollFreeze.dispose()
   if (animationId) {
     cancelAnimationFrame(animationId)
     animationId = 0
